@@ -50,51 +50,32 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0D1524;
-    --surface: #152037;
-    --surface-2: #1E2C48;
-    --ink: #E8ECF3;
-    --ink-2: #9AA8C0;
-    --line: #2B3B5A;
-    --btn-bg: #E8ECF3;
-    --btn-ink: #0D1524;
-    --panel: #1B2A47;
-    --panel-ink: #E8ECF3;
-    --panel-ink-2: #9AA8C0;
-    --panel-line: #2F4269;
-    --pole-red: #E0483D;
-    --pole-white: #E8ECF3;
-    --pole-blue: #5B7FD6;
-    --focus: #8FB0FF;
-    --danger: #F0776C;
-    --st-confirmada: #4CC38A;
-    --st-pendiente: #E0A93B;
-    --st-cancelada: #F0776C;
-    --st-completada: #7C9AE6;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0D1524;
-  --surface: #152037;
-  --surface-2: #1E2C48;
-  --ink: #E8ECF3;
-  --ink-2: #9AA8C0;
-  --line: #2B3B5A;
-  --btn-bg: #E8ECF3;
-  --btn-ink: #0D1524;
-  --panel: #1B2A47;
-  --panel-ink: #E8ECF3;
-  --panel-ink-2: #9AA8C0;
-  --panel-line: #2F4269;
-  --pole-red: #E0483D;
-  --pole-white: #E8ECF3;
-  --pole-blue: #5B7FD6;
-  --focus: #8FB0FF;
-  --danger: #F0776C;
-  --st-confirmada: #4CC38A;
-  --st-pendiente: #E0A93B;
-  --st-cancelada: #F0776C;
-  --st-completada: #7C9AE6;
+  --bg: #0d0d0d;              /* fondo general, negro profundo */
+  --surface: #1a1a1a;         /* superficie de tarjetas, negro suave */
+  --surface-2: #2b2620;       /* superficie secundaria, negro cálido */
+  --ink: #f2e9d8;             /* texto principal, marfil cálido */
+  --ink-2: #b8a67d;           /* texto secundario, dorado apagado */
+  --line: #4a3f2f;            /* líneas y bordes, bronce oscuro */
+
+  --btn-bg: #c9a13b;          /* fondo de botones, dorado */
+  --btn-ink: #0d0d0d;         /* texto de botones, negro (contraste sobre dorado) */
+
+  --panel: #14120e;           /* panel admin, casi negro con matiz cálido */
+  --panel-ink: #f2e9d8;       /* texto del panel, marfil */
+  --panel-ink-2: #d4b96a;     /* texto secundario del panel, dorado claro */
+  --panel-line: #3a3226;      /* líneas del panel, bronce */
+
+  --pole-red: #8b2e2e;        /* poste de barbería, rojo vino oscuro */
+  --pole-white: #f2e9d8;      /* poste, marfil (en vez de blanco puro) */
+  --pole-blue: #14213a;       /* poste, azul casi negro, discreto */
+
+  --focus: #c9a13b;           /* enfoque/selección, dorado (mismo que btn-bg) */
+  --danger: #a83232;          /* peligro/error, rojo oscuro */
+
+  --st-confirmada: #3f7d4f;   /* verde apagado, se distingue sin romper la paleta */
+  --st-pendiente: #c9a13b;    /* dorado, coherente con el acento principal */
+  --st-cancelada: #a83232;    /* rojo oscuro, igual que --danger */
+  --st-completada: #6b7a9e;   /* azul grisáceo apagado */
 }
 
 /* =====================================================================
