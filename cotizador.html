@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cotizador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ------------------------------------------------------------
+     COLORES Y ESTILO
+     Cambia las variables de .cot para que combine con tu sitio.
+     ------------------------------------------------------------ */
+  body { margin: 0; background: #eceff3; }
+
+  .cot {
+    --cot-tinta: #1d2a3a;
+    --cot-suave: #5b6878;
+    --cot-linea: #d8dee6;
+    --cot-guia: #b8c1cc;
+    --cot-acento: #0b6e5b;
+    --cot-acento-suave: #e2f1ed;
+    --cot-aviso: #b45309;
+
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: clamp(18px, 4vw, 44px) clamp(16px, 4vw, 32px);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--cot-tinta);
+    line-height: 1.5;
+  }
+  .cot *, .cot *::before, .cot *::after { box-sizing: border-box; }
+  .cot [hidden] { display: none !important; }
+  .cot button, .cot input, .cot select { font: inherit; color: inherit; }
+  .cot :focus-visible { outline: 3px solid var(--cot-acento); outline-offset: 2px; }
+
+  /* Encabezado */
+  .cot-titulo { margin: 0 0 6px; font-size: clamp(1.6rem, 3.2vw, 2.15rem); line-height: 1.15; font-weight: 600; letter-spacing: -0.015em; }
+  .cot-sub { margin: 0 0 28px; max-width: 52ch; color: var(--cot-suave); }
+
+  /* Distribución */
+  .cot-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); gap: clamp(20px, 4vw, 40px); align-items: start; }
+  .cot-recibo { position: sticky; top: 20px; }
+  @media (max-width: 840px) {
+    .cot-grid { grid-template-columns: minmax(0, 1fr); }
+    .cot-recibo { position: static; }
+  }
+
+  /* Pestañas */
+  .cot-tabs { display: flex; gap: 4px; padding: 4px; margin-bottom: 24px; background: var(--cot-linea); border-radius: 10px; }
+  .cot-tabs button { flex: 1; padding: 10px 12px; border: 0; border-radius: 7px; background: transparent; color: var(--cot-suave); font-weight: 500; cursor: pointer; transition: background .15s, color .15s; }
+  .cot-tabs button:hover { color: var(--cot-tinta); }
+  .cot-tabs button[aria-selected="true"] { background: var(--cot-acento); color: #fff; }
+
+  /* Textos de apoyo */
+  .cot-etiqueta { display: block; margin: 0 0 8px; padding: 0; font-weight: 500; font-size: .9375rem; }
+  .cot-pista { margin: 8px 0 0; font-size: .875rem; color: var(--cot-suave); }
+  .cot-espacio { margin-top: 22px; }
+
+  /* Cantidad */
+  .cot-cantidad { display: flex; align-items: stretch; max-width: 260px; }
+  .cot-cantidad button { width: 48px; border: 1.5px solid var(--cot-linea); background: #fff; font-size: 1.25rem; line-height: 1; cursor: pointer; }
+  .cot-cantidad button:first-child { border-right: 0; border-radius: 8px 0 0 8px; }
+  .cot-cantidad button:last-child { border-left: 0; border-radius: 0 8px 8px 0; }
+  .cot-cantidad button:hover { background: var(--cot-acento-suave); }
+  .cot-cantidad input {
+    width: 100%; min-width: 0; padding: 12px 8px; border: 1.5px solid var(--cot-linea); border-radius: 0;
+    background: #fff; text-align: center; font-size: 1.25rem; font-weight: 600; font-variant-numeric: tabular-nums;
+    -moz-appearance: textfield; appearance: textfield;
+  }
+  .cot-cantidad input::-webkit-outer-spin-button,
+  .cot-cantidad input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  /* Escala de precios por cantidad */
+  .cot-escala { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+  .cot-tramo { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1.5px solid var(--cot-linea); border-radius: 8px; background: #fff; }
+  .cot-rango { font-size: .8125rem; color: var(--cot-suave); }
+  .cot-tramo-precio { font-size: 1.0625rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .cot-tramo.activo { border-color: var(--cot-acento); background: var(--cot-acento-suave); }
+  .cot-tramo.activo .cot-rango { color: var(--cot-acento); }
+
+  /* Listas de servicios y productos */
+  .cot-grupo { min-width: 0; margin: 0; padding: 0; border: 0; }
+  .cot-lista { display: grid; gap: 10px; }
+  .cot-opcion { position: relative; display: block; cursor: pointer; }
+  .cot-opcion input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+  .cot-cuerpo { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 14px 16px; border: 1.5px solid var(--cot-linea); border-radius: 8px; background: #fff; transition: border-color .15s, background .15s; }
+  .cot-texto { display: flex; flex-direction: column; gap: 2px; }
+  .cot-texto span { font-size: .875rem; color: var(--cot-suave); }
+  .cot-precio { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .cot-opcion input:checked + .cot-cuerpo { border-color: var(--cot-acento); background: var(--cot-acento-suave); }
+  .cot-opcion input:focus-visible + .cot-cuerpo { outline: 3px solid var(--cot-acento); outline-offset: 2px; }
+  .cot-vacio { margin: 0; padding: 16px 0; color: var(--cot-suave); }
+
+  /* Envío */
+  .cot-envio { margin-top: 28px; padding-top: 24px; border-top: 1px dashed var(--cot-guia); }
+  .cot-sw { position: relative; display: flex; align-items: center; gap: 12px; font-weight: 500; cursor: pointer; }
+  .cot-sw input { position: absolute; width: 44px; height: 26px; margin: 0; opacity: 0; cursor: pointer; }
+  .cot-carril { position: relative; flex: none; width: 44px; height: 26px; border-radius: 13px; background: #7d8898; transition: background .15s; }
+  .cot-carril::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .15s; }
+  .cot-sw input:checked + .cot-carril { background: var(--cot-acento); }
+  .cot-sw input:checked + .cot-carril::after { transform: translateX(18px); }
+  .cot-sw input:focus-visible + .cot-carril { outline: 3px solid var(--cot-acento); outline-offset: 2px; }
+  .cot-detalle-envio { margin-top: 16px; }
+  .cot-select {
+    width: 100%; padding: 12px 40px 12px 14px; border: 1.5px solid var(--cot-linea); border-radius: 8px; font-size: 1rem;
+    background: #fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1.5l5 5 5-5' fill='none' stroke='%231d2a3a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/></svg>") no-repeat right 14px center;
+    -webkit-appearance: none; appearance: none;
+  }
+
+  /* Recibo */
+  .cot-recibo { padding: 24px 22px 22px; border: 1px solid var(--cot-linea); border-top: 5px solid var(--cot-acento); border-radius: 4px 4px 10px 10px; background: #fff; }
+  .cot-recibo h3 { margin: 0; font-size: 1.125rem; font-weight: 600; }
+  .cot-fecha { margin: 2px 0 0; font-size: .875rem; color: var(--cot-suave); }
+  .cot-lineas { margin-top: 18px; border-top: 1px dashed var(--cot-guia); }
+  .cot-linea { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px dashed var(--cot-guia); }
+  .cot-concepto { display: flex; flex-direction: column; min-width: 0; }
+  .cot-nombre { font-weight: 500; }
+  .cot-detalle { font-size: .875rem; color: var(--cot-suave); font-variant-numeric: tabular-nums; }
+  .cot-monto { font-weight: 500; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .cot-pendiente .cot-monto { color: var(--cot-aviso); }
+  .cot-total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-top: 16px; }
+  .cot-total span { font-weight: 500; }
+  .cot-total strong { font-size: clamp(1.75rem, 4vw, 2.25rem); font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .cot-nota { margin: 12px 0 0; font-size: .875rem; color: var(--cot-suave); }
+  .cot-ahorro { display: block; margin-bottom: 4px; font-weight: 500; color: var(--cot-acento); }
+
+  /* Botones */
+  .cot-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+  .cot-btn { flex: 1 1 auto; padding: 11px 16px; border: 1.5px solid var(--cot-acento); border-radius: 8px; background: #fff; color: var(--cot-acento); font-weight: 500; cursor: pointer; transition: background .15s, color .15s; }
+  .cot-btn:hover:not(:disabled) { background: var(--cot-acento); color: #fff; }
+  .cot-btn:disabled { opacity: .45; cursor: not-allowed; }
+  .cot-btn-fuerte { background: var(--cot-acento); color: #fff; }
+  .cot-estado { min-height: 1.4em; margin: 8px 0 0; font-size: .875rem; color: var(--cot-acento); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cot *, .cot *::before, .cot *::after { transition: none !important; }
+  }
+  @media print {
+    body { background: #fff; }
+    .cot-titulo, .cot-sub, .cot-izq, .cot-acciones { display: none; }
+    .cot-grid { display: block; }
+    .cot-recibo { position: static; border-color: #999; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cot" id="cotizador">
+  <header>
+    <h2 class="cot-titulo">Cotiza en un momento</h2>
+    <p class="cot-sub">Elige lo que necesitas y el precio se actualiza al instante.</p>
+  </header>
+
+  <div class="cot-grid">
+    <div class="cot-izq">
+      <div class="cot-tabs" id="tabs" role="tablist" aria-label="Tipo de cotización"></div>
+
+      <!-- Varias piezas (mayoreo) -->
+      <section class="cot-panel" id="panel-piezas" role="tabpanel" aria-labelledby="tab-piezas">
+        <label class="cot-etiqueta" for="cantidad">Cantidad de piezas</label>
+        <div class="cot-cantidad">
+          <button type="button" id="menos" aria-label="Quitar una pieza">−</button>
+          <input id="cantidad" type="number" inputmode="numeric" min="1" max="999999" step="1" value="10">
+          <button type="button" id="mas" aria-label="Agregar una pieza">+</button>
+        </div>
+        <p class="cot-pista" id="pista-cantidad" aria-live="polite"></p>
+        <p class="cot-etiqueta cot-espacio">Precio por pieza según la cantidad</p>
+        <div class="cot-escala" id="escala" role="list"></div>
+      </section>
+
+      <!-- Servicio -->
+      <section class="cot-panel" id="panel-servicio" role="tabpanel" aria-labelledby="tab-servicio" hidden>
+        <fieldset class="cot-grupo">
+          <legend class="cot-etiqueta">Elige un servicio</legend>
+          <div class="cot-lista" id="lista-servicio"></div>
+        </fieldset>
+      </section>
+
+      <!-- Un producto -->
+      <section class="cot-panel" id="panel-producto" role="tabpanel" aria-labelledby="tab-producto" hidden>
+        <fieldset class="cot-grupo">
+          <legend class="cot-etiqueta">Elige un producto</legend>
+          <div class="cot-lista" id="lista-producto"></div>
+        </fieldset>
+      </section>
+
+      <!-- Envío -->
+      <div class="cot-envio" id="bloque-envio">
+        <label class="cot-sw">
+          <input type="checkbox" id="envio-si" role="switch">
+          <span class="cot-carril" aria-hidden="true"></span>
+          <span>Necesito envío</span>
+        </label>
+        <div class="cot-detalle-envio" id="envio-detalle" hidden>
+          <label class="cot-etiqueta" for="zona">Zona de entrega</label>
+          <select class="cot-select" id="zona"></select>
+          <p class="cot-pista" id="pista-envio"></p>
+        </div>
+      </div>
+    </div>
+
+    <aside class="cot-recibo" aria-labelledby="recibo-titulo">
+      <h3 id="recibo-titulo">Tu cotización</h3>
+      <p class="cot-fecha" id="recibo-fecha"></p>
+      <div class="cot-lineas" id="recibo-lineas"></div>
+      <div class="cot-total" aria-live="polite" aria-atomic="true">
+        <span id="recibo-etiqueta">Total</span>
+        <strong id="recibo-total">—</strong>
+      </div>
+      <p class="cot-nota" id="recibo-nota"></p>
+      <div class="cot-acciones">
+        <button type="button" class="cot-btn cot-btn-fuerte" id="btn-wa" hidden>Enviar por WhatsApp</button>
+        <button type="button" class="cot-btn" id="btn-copiar">Copiar</button>
+        <button type="button" class="cot-btn" id="btn-imprimir">Imprimir</button>
+      </div>
+      <p class="cot-estado" id="estado-accion" role="status"></p>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ==============================================================
+     CONFIGURACIÓN: aquí defines tus precios, servicios y envíos.
+     ============================================================== */
+  const CONFIG = {
+    negocio: "Nombre de tu negocio",
+    moneda: "MXN",              // Código de moneda: MXN, USD, EUR...
+    idioma: "es-MX",            // Formato de números y fechas
+    vigenciaDias: 15,           // Días de validez de la cotización (0 para ocultarlo)
+    nota: "Precios sujetos a confirmación.",
+    whatsapp: "",               // Número con código de país, sin + ni espacios. Ej.: 5215512345678
+                                // Si lo dejas vacío, el botón de WhatsApp no aparece.
+
+    // Tipos de cotización que se muestran. Quita los que no uses.
+    modos: ["piezas", "servicio", "producto"],
+
+    // 1) VARIAS PIEZAS (mayoreo)
+    // Cada tramo aplica "desde" esa cantidad. Entre más piezas, menor el precio por unidad.
+    mayoreo: {
+      nombre: "Pieza",
+      tramos: [
+        { desde: 1,   precio: 100 },
+        { desde: 10,  precio: 85 },
+        { desde: 50,  precio: 72 },
+        { desde: 200, precio: 60 }
+      ]
+    },
+
+    // 2) SERVICIOS (precio fijo por servicio)
+    servicios: [
+      { id: "basico",   nombre: "Servicio básico",   descripcion: "Descripción corta del servicio.", precio: 350 },
+      { id: "estandar", nombre: "Servicio estándar", descripcion: "Descripción corta del servicio.", precio: 780 },
+      { id: "premium",  nombre: "Servicio premium",  descripcion: "Descripción corta del servicio.", precio: 1450 }
+    ],
+
+    // 3) PRODUCTOS (precio fijo por producto). Con uno solo, se muestra ese producto.
+    productos: [
+      { id: "destacado", nombre: "Producto destacado", descripcion: "Descripción corta del producto.", precio: 1290 }
+    ],
+
+    // ENVÍO: depende de la zona y del número de piezas.
+    // Costo = base + (porPieza × número de piezas). En servicios y productos cuenta como 1 pieza.
+    envio: {
+      zonas: [
+        { id: "local",    nombre: "Local",    base: 50,  porPieza: 2 },
+        { id: "regional", nombre: "Regional", base: 120, porPieza: 4 },
+        { id: "nacional", nombre: "Nacional", base: 220, porPieza: 7 }
+      ]
+    }
+  };
+
+  /* ==============================================================
+     A partir de aquí no necesitas editar nada.
+     ============================================================== */
+
+  const MODOS = { piezas: "Varias piezas", servicio: "Servicio", producto: "Un producto" };
+  const MAX_PIEZAS = 999999;
+  const modos = CONFIG.modos.filter(function (m) { return MODOS[m]; });
+  if (!modos.length) modos.push("piezas");
+  const TRAMOS = CONFIG.mayoreo.tramos.slice().sort(function (a, b) { return a.desde - b.desde; });
+  const ZONAS = CONFIG.envio.zonas;
+
+  const formato = new Intl.NumberFormat(CONFIG.idioma, { style: "currency", currency: CONFIG.moneda });
+  const dinero = function (n) { return formato.format(n); };
+  const aCent = function (n) { return Math.round(n * 100); };
+  const el = function (id) { return document.getElementById(id); };
+  const esc = function (s) {
+    return String(s).replace(/[&<>"']/g, function (ch) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+    });
+  };
+  const fechaHoy = new Date().toLocaleDateString(CONFIG.idioma, { day: "numeric", month: "long", year: "numeric" });
+
+  const estado = {
+    modo: modos[0],
+    cantidad: 10,
+    servicio: (CONFIG.servicios[0] || {}).id,
+    producto: (CONFIG.productos[0] || {}).id,
+    envio: false,
+    zona: ""
+  };
+
+  /* ---------- Lógica de precios ---------- */
+
+  function cantidadValida(n) {
+    return Number.isInteger(n) && n >= 1 && n <= MAX_PIEZAS;
+  }
+
+  function tramoPara(n) {
+    var elegido = TRAMOS[0];
+    TRAMOS.forEach(function (t) { if (n >= t.desde) elegido = t; });
+    return elegido;
+  }
+
+  function cotizar() {
+    var lineas = [];
+    var subtotal = 0, piezas = 1, ahorro = 0, valida = true, aviso = "";
+
+    if (estado.modo === "piezas") {
+      var n = estado.cantidad;
+      if (!cantidadValida(n)) {
+        valida = false;
+        aviso = "Indica una cantidad entera entre 1 y " + MAX_PIEZAS.toLocaleString(CONFIG.idioma) + ".";
+      } else {
+        var t = tramoPara(n);
+        piezas = n;
+        subtotal = aCent(t.precio) * n;
+        ahorro = (aCent(TRAMOS[0].precio) - aCent(t.precio)) * n;
+        lineas.push({ nombre: CONFIG.mayoreo.nombre, detalle: n + " × " + dinero(t.precio), monto: subtotal });
+      }
+    } else {
+      var lista = estado.modo === "servicio" ? CONFIG.servicios : CONFIG.productos;
+      var it = lista.filter(function (x) { return x.id === estado[estado.modo]; })[0];
+      if (it) {
+        subtotal = aCent(it.precio);
+        lineas.push({ nombre: it.nombre, detalle: "", monto: subtotal });
+      } else {
+        valida = false;
+        aviso = "Elige una opción para ver el precio.";
+      }
+    }
+
+    var envio = null, envioPendiente = false;
+    if (valida && estado.envio) {
+      var z = ZONAS.filter(function (x) { return x.id === estado.zona; })[0];
+      if (z) {
+        envio = aCent(z.base) + aCent(z.porPieza) * piezas;
+        lineas.push({ nombre: "Envío", detalle: z.nombre, monto: envio });
+      } else {
+        envioPendiente = true;
+      }
+    }
+
+    return {
+      valida: valida,
+      aviso: aviso,
+      lineas: lineas,
+      envioPendiente: envioPendiente,
+      total: subtotal + (envio || 0),
+      etiquetaTotal: envioPendiente ? "Total sin envío" : "Total",
+      ahorro: ahorro
+    };
+  }
+
+  /* ---------- Pintar pantalla ---------- */
+
+  function pintarEscala() {
+    var n = estado.cantidad;
+    var activo = cantidadValida(n) ? tramoPara(n) : null;
+    el("escala").innerHTML = TRAMOS.map(function (t, i) {
+      var sig = TRAMOS[i + 1];
+      var rango;
+      if (!sig) rango = t.desde + " o más piezas";
+      else if (sig.desde - 1 === t.desde) rango = t.desde + (t.desde === 1 ? " pieza" : " piezas");
+      else rango = t.desde + " a " + (sig.desde - 1) + " piezas";
+      return '<div class="cot-tramo' + (t === activo ? " activo" : "") + '" role="listitem"' + (t === activo ? ' aria-current="true"' : "") + '>' +
+        '<span class="cot-rango">' + rango + '</span>' +
+        '<span class="cot-tramo-precio">' + dinero(t.precio) + '</span></div>';
+    }).join("");
+  }
+
+  function pintarPistaCantidad() {
+    var p = el("pista-cantidad");
+    var n = estado.cantidad;
+    if (!cantidadValida(n)) {
+      p.textContent = "Escribe un número entero de 1 en adelante.";
+      return;
+    }
+    var sig = TRAMOS.filter(function (t) { return t.desde > n; })[0];
+    if (sig) {
+      var faltan = sig.desde - n;
+      p.textContent = "Con " + faltan + (faltan === 1 ? " pieza más" : " piezas más") + ", el precio baja a " + dinero(sig.precio) + " por pieza.";
+    } else {
+      p.textContent = "Ya tienes el mejor precio por pieza.";
+    }
+  }
+
+  function pintarPistaEnvio() {
+    var z = ZONAS.filter(function (x) { return x.id === estado.zona; })[0];
+    el("pista-envio").textContent = z
+      ? dinero(z.base) + " de base + " + dinero(z.porPieza) + " por pieza."
+      : "El costo depende de la zona y del número de piezas.";
+  }
+
+  function textoCotizacion(q) {
+    var filas = q.lineas.map(function (l) {
+      return l.nombre + (l.detalle ? " (" + l.detalle + ")" : "") + ": " + dinero(l.monto / 100);
+    });
+    if (q.envioPendiente) filas.push("Envío: por definir");
+    var partes = ["Cotización – " + CONFIG.negocio, "Fecha: " + fechaHoy, ""].concat(filas);
+    partes.push(q.etiquetaTotal + ": " + dinero(q.total / 100));
+    if (CONFIG.vigenciaDias > 0) partes.push("", "Válida por " + CONFIG.vigenciaDias + " días.");
+    return partes.join("\n");
+  }
+
+  function pintarRecibo(q) {
+    var cont = el("recibo-lineas");
+    var botones = [el("btn-wa"), el("btn-copiar"), el("btn-imprimir")];
+
+    if (!q.valida) {
+      cont.innerHTML = '<p class="cot-vacio">' + esc(q.aviso) + '</p>';
+      el("recibo-total").textContent = "—";
+      el("recibo-etiqueta").textContent = "Total";
+      el("recibo-nota").textContent = "";
+      botones.forEach(function (b) { b.disabled = true; });
+      return;
+    }
+
+    var html = q.lineas.map(function (l) {
+      return '<div class="cot-linea"><div class="cot-concepto"><span class="cot-nombre">' + esc(l.nombre) + '</span>' +
+        (l.detalle ? '<span class="cot-detalle">' + esc(l.detalle) + '</span>' : "") +
+        '</div><span class="cot-monto">' + dinero(l.monto / 100) + '</span></div>';
+    }).join("");
+
+    if (q.envioPendiente) {
+      html += '<div class="cot-linea cot-pendiente"><div class="cot-concepto"><span class="cot-nombre">Envío</span>' +
+        '<span class="cot-detalle">Elige una zona para calcularlo</span></div>' +
+        '<span class="cot-monto">Por definir</span></div>';
+    }
+    cont.innerHTML = html;
+
+    el("recibo-etiqueta").textContent = q.etiquetaTotal;
+    el("recibo-total").textContent = dinero(q.total / 100);
+
+    var nota = "";
+    if (q.ahorro > 0) nota += '<span class="cot-ahorro">Ahorras ' + dinero(q.ahorro / 100) + ' frente al precio de 1 pieza.</span>';
+    var pie = [];
+    if (CONFIG.vigenciaDias > 0) pie.push("Válida por " + CONFIG.vigenciaDias + " días.");
+    if (CONFIG.nota) pie.push(esc(CONFIG.nota));
+    el("recibo-nota").innerHTML = nota + pie.join(" ");
+
+    botones.forEach(function (b) { b.disabled = false; });
+  }
+
+  function render() {
+    pintarEscala();
+    pintarPistaCantidad();
+    pintarPistaEnvio();
+    pintarRecibo(cotizar());
+  }
+
+  /* ---------- Listas de servicios y productos ---------- */
+
+  function pintarLista(idContenedor, items, grupo) {
+    var cont = el(idContenedor);
+    if (!items.length) {
+      cont.innerHTML = '<p class="cot-vacio">Aún no hay opciones disponibles.</p>';
+      return;
+    }
+    cont.innerHTML = items.map(function (it, i) {
+      return '<label class="cot-opcion">' +
+        '<input type="radio" name="' + grupo + '" value="' + esc(it.id) + '"' + (i === 0 ? " checked" : "") + '>' +
+        '<span class="cot-cuerpo"><span class="cot-texto"><strong>' + esc(it.nombre) + '</strong>' +
+        (it.descripcion ? '<span>' + esc(it.descripcion) + '</span>' : "") + '</span>' +
+        '<span class="cot-precio">' + dinero(it.precio) + '</span></span></label>';
+    }).join("");
+    cont.addEventListener("change", function (e) {
+      if (e.target && e.target.name === grupo) {
+        estado[grupo] = e.target.value;
+        render();
+      }
+    });
+  }
+
+  /* ---------- Pestañas ---------- */
+
+  var tabs = el("tabs");
+  tabs.hidden = modos.length < 2;
+  tabs.innerHTML = modos.map(function (m) {
+    return '<button type="button" role="tab" id="tab-' + m + '" aria-controls="panel-' + m + '" data-modo="' + m + '">' + MODOS[m] + '</button>';
+  }).join("");
+
+  function elegirModo(m, enfocar) {
+    estado.modo = m;
+    Array.prototype.forEach.call(tabs.querySelectorAll("[role=tab]"), function (b) {
+      var activa = b.dataset.modo === m;
+      b.setAttribute("aria-selected", activa ? "true" : "false");
+      b.tabIndex = activa ? 0 : -1;
+      if (activa && enfocar) b.focus();
+    });
+    Object.keys(MODOS).forEach(function (k) { el("panel-" + k).hidden = k !== m; });
+    render();
+  }
+
+  tabs.addEventListener("click", function (e) {
+    var b = e.target.closest("[role=tab]");
+    if (b) elegirModo(b.dataset.modo);
+  });
+  tabs.addEventListener("keydown", function (e) {
+    var i = modos.indexOf(estado.modo), j = null;
+    if (e.key === "ArrowRight") j = (i + 1) % modos.length;
+    if (e.key === "ArrowLeft") j = (i - 1 + modos.length) % modos.length;
+    if (e.key === "Home") j = 0;
+    if (e.key === "End") j = modos.length - 1;
+    if (j !== null) {
+      e.preventDefault();
+      elegirModo(modos[j], true);
+    }
+  });
+
+  /* ---------- Cantidad ---------- */
+
+  var inputCantidad = el("cantidad");
+  inputCantidad.value = estado.cantidad;
+  inputCantidad.max = MAX_PIEZAS;
+  inputCantidad.addEventListener("input", function () {
+    var v = inputCantidad.value.trim();
+    estado.cantidad = v === "" ? NaN : Number(v);
+    render();
+  });
+
+  function cambiarCantidad(delta) {
+    var base = cantidadValida(estado.cantidad) ? estado.cantidad : 0;
+    var n = Math.min(MAX_PIEZAS, Math.max(1, base + delta));
+    estado.cantidad = n;
+    inputCantidad.value = n;
+    render();
+  }
+  el("menos").addEventListener("click", function () { cambiarCantidad(-1); });
+  el("mas").addEventListener("click", function () { cambiarCantidad(1); });
+
+  /* ---------- Envío ---------- */
+
+  if (!ZONAS.length) {
+    el("bloque-envio").hidden = true;
+  } else {
+    el("zona").innerHTML = '<option value="">Selecciona una zona</option>' + ZONAS.map(function (z) {
+      return '<option value="' + esc(z.id) + '">' + esc(z.nombre) + '</option>';
+    }).join("");
+    el("zona").addEventListener("change", function (e) {
+      estado.zona = e.target.value;
+      render();
+    });
+    el("envio-si").addEventListener("change", function (e) {
+      estado.envio = e.target.checked;
+      el("envio-detalle").hidden = !estado.envio;
+      render();
+    });
+  }
+
+  /* ---------- Acciones: copiar, imprimir, WhatsApp ---------- */
+
+  var temporizador;
+  function avisar(msg) {
+    el("estado-accion").textContent = msg;
+    clearTimeout(temporizador);
+    temporizador = setTimeout(function () { el("estado-accion").textContent = ""; }, 2600);
+  }
+
+  function copiarRespaldo(texto) {
+    var ta = document.createElement("textarea");
+    ta.value = texto;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  el("btn-copiar").addEventListener("click", function () {
+    var q = cotizar();
+    if (!q.valida) return;
+    var texto = textoCotizacion(q);
+    var listo = function () { avisar("Cotización copiada"); };
+    var fallo = function () {
+      avisar(copiarRespaldo(texto) ? "Cotización copiada" : "No se pudo copiar. Selecciona el texto manualmente.");
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(texto).then(listo, fallo);
+    } else {
+      fallo();
+    }
+  });
+
+  el("btn-imprimir").addEventListener("click", function () {
+    var q = cotizar();
+    if (!q.valida) return;
+    var filas = q.lineas.map(function (l) {
+      return '<tr><td>' + esc(l.nombre) + (l.detalle ? '<small>' + esc(l.detalle) + '</small>' : "") +
+        '</td><td class="m">' + dinero(l.monto / 100) + '</td></tr>';
+    }).join("");
+    if (q.envioPendiente) filas += '<tr><td>Envío<small>Por definir</small></td><td class="m">—</td></tr>';
+
+    var w = window.open("", "_blank", "width=760,height=900");
+    if (!w) { window.print(); return; }
+    var pie = [];
+    if (CONFIG.vigenciaDias > 0) pie.push("Válida por " + CONFIG.vigenciaDias + " días.");
+    if (CONFIG.nota) pie.push(esc(CONFIG.nota));
+
+    w.document.write(
+      '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Cotización – ' + esc(CONFIG.negocio) + '</title><style>' +
+      'body{font:16px/1.5 "IBM Plex Sans",system-ui,sans-serif;color:#1d2a3a;margin:40px auto;max-width:560px;padding:0 20px}' +
+      'h1{font-size:22px;margin:0}p.f{color:#5b6878;margin:4px 0 24px}' +
+      'table{width:100%;border-collapse:collapse}td{padding:10px 0;border-bottom:1px dashed #b8c1cc;vertical-align:top}' +
+      'td.m{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}small{display:block;color:#5b6878}' +
+      '.t td{border-bottom:0;border-top:2px solid #1d2a3a;font-size:20px;font-weight:600;padding-top:14px}' +
+      '.n{color:#5b6878;font-size:14px;margin-top:24px}' +
+      '</style></head><body><h1>Cotización</h1><p class="f">' + esc(CONFIG.negocio) + ' · ' + esc(fechaHoy) + '</p>' +
+      '<table>' + filas + '<tr class="t"><td>' + esc(q.etiquetaTotal) + '</td><td class="m">' + dinero(q.total / 100) + '</td></tr></table>' +
+      '<p class="n">' + pie.join(" ") + '</p></body></html>'
+    );
+    w.document.close();
+    setTimeout(function () { w.focus(); w.print(); }, 300);
+  });
+
+  var botonWa = el("btn-wa");
+  if (CONFIG.whatsapp) {
+    botonWa.hidden = false;
+    botonWa.addEventListener("click", function () {
+      var q = cotizar();
+      if (!q.valida) return;
+      var url = "https://wa.me/" + encodeURIComponent(CONFIG.whatsapp) + "?text=" + encodeURIComponent(textoCotizacion(q));
+      window.open(url, "_blank", "noopener");
+    });
+  }
+
+  /* ---------- Inicio ---------- */
+
+  el("recibo-fecha").textContent = fechaHoy;
+  pintarLista("lista-servicio", CONFIG.servicios, "servicio");
+  pintarLista("lista-producto", CONFIG.productos, "producto");
+  elegirModo(estado.modo);
+})();
+</script>
+</body>
+</html>
